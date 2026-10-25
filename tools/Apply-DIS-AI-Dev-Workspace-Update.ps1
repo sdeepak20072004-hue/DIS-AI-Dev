@@ -256,7 +256,9 @@ $replacement = "          {activeScreen === 'workspace' ? (" + $newLine + "     
 $app = $app.Replace($screenMarker, $replacement)
 $css = $css + $styles
 $readme = $readme.Replace($clonePlaceholder, 'https://github.com/sdeepak20072004-hue/DIS-AI-Dev.git')
-$readme = $readme.Replace('- [x] Responsive dark UI shell with honest “not connected” states.', "- [x] Responsive dark UI shell with honest “not connected” states." + $newLine + "- [x] Interactive Local Demo chat with in-memory session state and clearly labeled rule-based replies (no model provider connected).")
+$notConnectedLabel = '- [x] Responsive dark UI shell with honest ' + [char]0x201C + 'not connected' + [char]0x201D + ' states.'
+$updatedChecklist = $notConnectedLabel + $newLine + '- [x] Interactive Local Demo chat with in-memory session state and clearly labeled rule-based replies (no model provider connected).'
+$readme = $readme.Replace($notConnectedLabel, $updatedChecklist)
 $readme = $readme.Replace('| AI Workspace   | Placeholder UI | Streaming chat through a provider adapter                   |', '| AI Workspace   | Local Demo     | Provider adapter and streaming responses (planned)         |')
 $readme = $readme.Replace('AI model/provider calls, API-key handling and streaming conversations.', 'Connected AI model/provider calls, API-key handling and streaming conversations. The current workspace replies with fixed local demo rules only.')
 $screenshotSection = "## Screenshots" + $newLine + $newLine + "A screenshot captured from the running desktop app will be added at docs/screenshots/dashboard.png after visual verification. See docs/screenshots/README.md for capture instructions. No mock image is presented as a real application screenshot." + $newLine + $newLine + "## Technology choices"
@@ -286,3 +288,4 @@ Write-Host ''
 Write-Host 'Workspace update applied successfully.' -ForegroundColor Green
 Write-Host "Backup folder: $backupDir"
 Write-Host 'Next run: npm run format; npm run typecheck; npm run lint; npm run build.'
+
