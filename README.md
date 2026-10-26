@@ -28,10 +28,11 @@ DIS AI Dev is a personal project exploring how a secure desktop workspace could 
 - [x] Responsive dark UI shell with honest “not connected” states.
 - [x] Interactive Local Demo chat with in-memory session state and clearly labeled rule-based replies (no model provider connected).
 - [x] Initial engineering, security and roadmap documentation.
+- [x] Read-only Python project summary/search with bounded results and excluded secret/generated paths.
 
 ## Python helper (local development prototype)
 
-DIS AI Dev includes an optional Python standard-library sidecar for learning and bridge verification. It provides GET /health and POST /echo, listens only on 127.0.0.1:8765, and does not call an AI model, execute shell commands, read project files, or persist messages. It is not an AI provider integration.
+DIS AI Dev includes an optional Python standard-library sidecar for learning and bridge verification. It provides GET /health and POST /echo, plus read-only GET /workspace/summary and GET /workspace/search?q=term endpoints. It listens only on 127.0.0.1:8765, searches eligible small code/text files only within the current repository, skips common generated/dependency folders and secret-like files, and does not persist an index, execute shell commands, or send project contents to an AI provider. Project search is basic literal line search, not semantic search.
 
 Start it in a separate PowerShell terminal:
 
