@@ -6,6 +6,7 @@ No file contents are persisted or sent to a model/provider.
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,9 @@ MAX_QUERY_LENGTH = 100
 MAX_RESULTS = 30
 MAX_SNIPPET_LENGTH = 240
 SAMPLE_PATHS = 15
+SENSITIVE_LINE_PATTERN = re.compile(
+    r"(?i)\b(api[_-]?key|access[_-]?token|client[_-]?secret|password|passwd|private[_-]?key|authorization)\b\s*[:=]"
+)
 
 IGNORED_DIRECTORIES = {
     ".git",
@@ -204,6 +208,8 @@ def search_workspace(query: str, root: Path = PROJECT_ROOT) -> dict[str, Any]:
         try:
             with file_path.open("r", encoding="utf-8", errors="replace") as source:
                 for line_number, line in enumerate(source, start=1):
+                    if SENSITIVE_LINE_PATTERN.search(line):
+                        continue
                     if needle not in line.casefold():
                         continue
                     match_count += 1
