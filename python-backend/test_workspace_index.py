@@ -15,7 +15,8 @@ class WorkspaceIndexTests(unittest.TestCase):
         (self.root / "src").mkdir()
         (self.root / "src" / "app.ts").write_text(
             "export const greeting = 'Hello Workspace'\n"
-            "export const status = 'ready'\n",
+            "export const status = 'ready'\n"
+            "export const apiKey = 'do-not-index'\n",
             encoding="utf-8",
         )
         (self.root / "README.md").write_text(
