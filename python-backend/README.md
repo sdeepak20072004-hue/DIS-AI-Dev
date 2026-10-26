@@ -1,44 +1,43 @@
-# Python helper (learning milestone)
+# Python helper (local development prototype)
 
-This optional local service is the first Python component in DIS AI Dev. It uses only Python's standard library, so no pip install is required.
+This local Python standard-library service supports the DIS AI Dev learning prototype. No pip install is required.
 
-## What it does
+## Endpoints
 
-- GET /health reports service status, the Python version, and ai_connected=false.
-- POST /echo accepts a small JSON message and returns it from Python to verify the TypeScript-to-Python bridge.
-- It binds to 127.0.0.1, so it listens on this computer only.
-- It does not call an AI model, run shell commands, read project files, or save messages to disk.
+- GET /health reports the service status and Python version.
+- POST /echo verifies a small JSON round trip from the desktop UI to Python.
+- GET /workspace/summary counts eligible code/text files under this repository and returns a few relative sample paths.
+- GET /workspace/search?q=term performs case-insensitive literal search and returns bounded file/line/snippet results.
+
+The service binds to 127.0.0.1 only. Project search is read-only, scoped to the repository containing this service, and skips common generated/dependency folders, environment files, credentials, key files, symlinks and oversized files. It does not persist an index or send project contents to a model/provider. This is deterministic line-based search, not semantic search and not an AI feature.
 
 ## Run it on Windows
 
-Open a second PowerShell 7 window:
+Open a separate PowerShell 7 terminal:
 
     cd C:\Projects\DIS-AI-Dev
     py -3 .\python-backend\server.py
 
-Keep this terminal open while using the desktop app. Stop the service with Ctrl+C in that terminal.
+Keep this terminal open while using the desktop app. Stop it with Ctrl+C.
 
 ## Run automated tests
-
-In a separate PowerShell window:
 
     cd C:\Projects\DIS-AI-Dev
     py -3 -m unittest discover -s .\python-backend -p "test_*.py" -v
 
-## Test the health endpoint manually
-
-With the service running, use another PowerShell window:
+## Manual examples
 
     Invoke-RestMethod -Uri "http://127.0.0.1:8765/health"
+    Invoke-RestMethod -Uri "http://127.0.0.1:8765/workspace/summary"
+    Invoke-RestMethod -Uri "http://127.0.0.1:8765/workspace/search?q=PythonHelperHandler"
 
-A successful response includes ok=True, a Python version, and ai_connected=False.
+Search text must contain 2–100 characters. Results are limited to 30 snippets; individual files larger than 256 KiB are skipped. This is a simple line-based search, not semantic/vector search.
 
 ## Beginner notes
 
-- ThreadingHTTPServer handles requests using Python's standard library.
-- GET /health checks whether the service is reachable.
-- POST /echo receives JSON data in the request body.
+- ThreadingHTTPServer handles local HTTP requests.
+- GET retrieves read-only status or search results.
+- Query parameters pass small values such as the search term.
 - JSON lets TypeScript and Python exchange structured data.
-- 127.0.0.1 is the loopback address for this computer.
-- Port 8765 is where the prototype listens.
-- unittest runs repeatable checks without installing a test package.
+- 127.0.0.1 is this computer's loopback address.
+- unittest runs repeatable checks without installing another test package.
