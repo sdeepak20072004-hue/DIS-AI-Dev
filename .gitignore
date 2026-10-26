@@ -29,3 +29,9 @@ Thumbs.db
 # TypeScript and tool caches
 *.tsbuildinfo
 .eslintcache
+
+# Python generated files and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
