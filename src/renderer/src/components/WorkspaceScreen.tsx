@@ -16,6 +16,34 @@ type PythonBridgeEcho = {
   ai_connected: boolean
 }
 
+type WorkspaceSummary = {
+  ok: boolean
+  workspace_name: string
+  files_scanned: number
+  extensions: Record<string, number>
+  sample_paths: string[]
+  truncated: boolean
+  persistent_index: false
+  read_only: true
+}
+
+type WorkspaceSearchResult = {
+  path: string
+  line: number
+  snippet: string
+}
+
+type WorkspaceSearchResponse = {
+  ok: boolean
+  query: string
+  files_scanned: number
+  match_count: number
+  results: WorkspaceSearchResult[]
+  truncated: boolean
+  persistent_index: false
+  read_only: true
+}
+
 const suggestions = [
   {
     title: 'Understand this project',
@@ -61,6 +89,16 @@ export default function WorkspaceScreen(): React.JSX.Element {
     'Not tested · Start the Python helper to check the bridge'
   )
 
+  const [explorerState, setExplorerState] = useState<
+    'idle' | 'scanning' | 'searching' | 'ready' | 'error'
+  >('idle')
+  const [explorerSummary, setExplorerSummary] = useState<WorkspaceSummary | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<WorkspaceSearchResponse | null>(null)
+  const [explorerNote, setExplorerNote] = useState(
+    'Not scanned · local, read-only repository search'
+  )
+
   const testPythonBridge = async (): Promise<void> => {
     setPythonState('checking')
     setPythonDetail('Checking local Python service…')
@@ -93,6 +131,63 @@ export default function WorkspaceScreen(): React.JSX.Element {
       setPythonState('offline')
       setPythonDetail('Not connected · Run py -3 .\\python-backend\\server.py in another terminal')
       setStatus('Python bridge unavailable · Chat remains in Local Demo mode')
+    }
+  }
+
+  const scanProject = async (): Promise<void> => {
+    setExplorerState('scanning')
+    setExplorerNote('Counting eligible code and text files…')
+    try {
+      const response = await fetch('http://127.0.0.1:8765/workspace/summary', {
+        signal: AbortSignal.timeout(5000)
+      })
+      const summary = (await response.json()) as WorkspaceSummary & { error?: string }
+      if (!response.ok || !summary.ok || !summary.read_only || summary.persistent_index) {
+        throw new Error(summary.error || 'Project summary was not valid')
+      }
+      setExplorerSummary(summary)
+      setSearchResults(null)
+      setExplorerState('ready')
+      setExplorerNote(
+        summary.files_scanned +
+          ' eligible files checked · No persistent index created' +
+          (summary.truncated ? ' · Scan limit reached' : '')
+      )
+    } catch {
+      setExplorerState('error')
+      setExplorerNote('Project service unavailable · Start the Python helper in another terminal')
+    }
+  }
+
+  const searchProject = async (): Promise<void> => {
+    const query = searchQuery.trim()
+    if (query.length < 2) {
+      setExplorerState('error')
+      setExplorerNote('Enter at least 2 characters to search.')
+      return
+    }
+    setExplorerState('searching')
+    setExplorerNote('Searching eligible files locally…')
+    try {
+      const url =
+        'http://127.0.0.1:8765/workspace/search?q=' + encodeURIComponent(query)
+      const response = await fetch(url, { signal: AbortSignal.timeout(7000) })
+      const result = (await response.json()) as WorkspaceSearchResponse & { error?: string }
+      if (!response.ok || !result.ok || !result.read_only || result.persistent_index) {
+        throw new Error(result.error || 'Search response was not valid')
+      }
+      setSearchResults(result)
+      setExplorerState('ready')
+      setExplorerNote(
+        result.match_count +
+          ' matching lines in ' +
+          result.files_scanned +
+          ' eligible files · No files changed' +
+          (result.truncated ? ' · Results limited' : '')
+      )
+    } catch {
+      setExplorerState('error')
+      setExplorerNote('Search unavailable · Start the Python helper and try again')
     }
   }
 
@@ -189,6 +284,77 @@ export default function WorkspaceScreen(): React.JSX.Element {
             {pythonState === 'checking' ? 'Checking…' : 'Test Python Bridge'}
           </button>
         </div>
+        <section className="workspace-explorer-panel" aria-label="Read-only project explorer">
+          <div className="workspace-explorer-heading">
+            <div>
+              <strong>Read-only Project Explorer</strong>
+              <small>{explorerNote}</small>
+            </div>
+            <button
+              type="button"
+              className="workspace-explorer-scan"
+              onClick={() => void scanProject()}
+              disabled={explorerState === 'scanning' || explorerState === 'searching'}
+            >
+              {explorerState === 'scanning' ? 'Scanning…' : 'Scan Project'}
+            </button>
+          </div>
+          <form
+            className="workspace-explorer-search"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void searchProject()
+            }}
+          >
+            <input
+              aria-label="Search project code"
+              type="search"
+              value={searchQuery}
+              maxLength={100}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search code, e.g. PythonHelperHandler"
+            />
+            <button
+              type="submit"
+              disabled={explorerState === 'scanning' || explorerState === 'searching'}
+            >
+              {explorerState === 'searching' ? 'Searching…' : 'Search'}
+            </button>
+          </form>
+          {explorerSummary ? (
+            <div className="workspace-explorer-summary">
+              <span>
+                <strong>{explorerSummary.workspace_name}</strong>
+                {' · '}{explorerSummary.files_scanned} files checked
+              </span>
+              <span>{Object.keys(explorerSummary.extensions).length} file types</span>
+            </div>
+          ) : null}
+          {searchResults ? (
+            <div className="workspace-explorer-results" aria-live="polite">
+              {searchResults.results.length === 0 ? (
+                <p className="workspace-explorer-empty">No matching lines found in eligible text files.</p>
+              ) : (
+                searchResults.results.map((result) => (
+                  <article
+                    className="workspace-explorer-result"
+                    key={result.path + ':' + result.line}
+                  >
+                    <strong>{result.path}:{result.line}</strong>
+                    <code>{result.snippet}</code>
+                  </article>
+                ))
+              )}
+              {searchResults.truncated ? (
+                <p className="workspace-explorer-empty">Results were limited. Refine your search for a smaller result set.</p>
+              ) : null}
+            </div>
+          ) : null}
+          <p className="workspace-explorer-foot">
+            Local-only literal search. Secret-like files, generated folders, dependencies, symlinks
+            and large files are excluded. No code is sent to an AI provider.
+          </p>
+        </section>
         <div className="workspace-demo-banner" role="note">
           <span className="workspace-banner-icon">i</span>
           <p>
