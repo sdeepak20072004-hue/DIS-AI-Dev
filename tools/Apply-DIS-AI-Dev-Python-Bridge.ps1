@@ -34,7 +34,7 @@ $headerMarker = @'
         </header>
         <div className="workspace-demo-banner" role="note">
 '@
-$cspOld = "content=""default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:""
+$cspOld = 'content="default-src ''self''; script-src ''self''; style-src ''self'' ''unsafe-inline''; img-src ''self'' data:"'
 $readmeMarker = '## What is not implemented yet'
 
 foreach ($check in @(
@@ -159,7 +159,7 @@ type PythonBridgeEcho = {
 '@
     $css = $css + $pythonStyles
 
-    $cspNew = "content=""default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8765 http://localhost:8765"""
+    $cspNew = 'content="default-src ''self''; script-src ''self''; style-src ''self'' ''unsafe-inline''; img-src ''self'' data:; connect-src ''self'' http://127.0.0.1:8765 http://localhost:8765"'
     $html = $html.Replace($cspOld, $cspNew)
 
     $newReadmeSection = @'
