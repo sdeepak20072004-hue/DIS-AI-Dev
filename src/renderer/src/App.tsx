@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
+import WorkspaceScreen from './components/WorkspaceScreen'
 
 type IconName =
   | 'grid'
@@ -503,7 +504,9 @@ function App(): React.JSX.Element {
         </header>
 
         <div className="page-content">
-          {activeScreen === 'overview' ? (
+          {activeScreen === 'workspace' ? (
+            <WorkspaceScreen />
+          ) : activeScreen === 'overview' ? (
             <>
               <section className="welcome-row">
                 <div>

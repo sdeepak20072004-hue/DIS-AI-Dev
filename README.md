@@ -26,13 +26,28 @@ DIS AI Dev is a personal project exploring how a secure desktop workspace could 
 - [x] React + TypeScript renderer and TypeScript checks.
 - [x] Navigation across Overview, AI Workspace, Code Studio, Agents, Knowledge, Memory, Activity, Integrations, Roadmap and Settings screens.
 - [x] Responsive dark UI shell with honest “not connected” states.
+- [x] Interactive Local Demo chat with in-memory session state and clearly labeled rule-based replies (no model provider connected).
 - [x] Initial engineering, security and roadmap documentation.
+
+## Python helper (local development prototype)
+
+DIS AI Dev includes an optional Python standard-library sidecar for learning and bridge verification. It provides GET /health and POST /echo, listens only on 127.0.0.1:8765, and does not call an AI model, execute shell commands, read project files, or persist messages. It is not an AI provider integration.
+
+Start it in a separate PowerShell terminal:
+
+    py -3 .\python-backend\server.py
+
+Run the built-in tests in another terminal:
+
+    py -3 -m unittest discover -s .\python-backend -p "test_*.py" -v
+
+In AI Workspace, select Test Python Bridge to test both endpoints. Stop the Python service with Ctrl+C in its terminal.
 
 ## What is not implemented yet
 
 These are planned, not working features in the current UI prototype:
 
-- AI model/provider calls, API-key handling and streaming conversations.
+- Connected AI model/provider calls, API-key handling and streaming conversations. The current workspace replies with fixed local demo rules only.
 - Autonomous coding-agent behavior, terminal execution, file edits or automatic commits.
 - Persistent chat history, memory, retrieval or document indexing.
 - Speech-to-text, text-to-speech, wake-word detection or camera-based features.
@@ -45,7 +60,7 @@ The interface intentionally labels these modules as placeholders. A visual card 
 | Module         | Current state  | Intended direction                                          |
 | -------------- | -------------- | ----------------------------------------------------------- |
 | Overview       | UI available   | Workspace status, milestones and safe next actions          |
-| AI Workspace   | Placeholder UI | Streaming chat through a provider adapter                   |
+| AI Workspace   | Local Demo     | Provider adapter and streaming responses (planned)          |
 | Code Studio    | Placeholder UI | Project context, reviewed diffs and approval-gated commands |
 | Agents & Tasks | Placeholder UI | Explicit agent contracts, task state and approvals          |
 | Knowledge Base | Placeholder UI | User-approved sources, citations and scoped retrieval       |
@@ -53,6 +68,10 @@ The interface intentionally labels these modules as placeholders. A visual card 
 | Activity Log   | Placeholder UI | Structured events with secret redaction                     |
 | Integrations   | Placeholder UI | Explicit adapters and secure configuration                  |
 | Roadmap        | UI available   | Public milestones tied to verified behavior                 |
+
+## Screenshots
+
+A screenshot captured from the running desktop app will be added at docs/screenshots/dashboard.png after visual verification. See docs/screenshots/README.md for capture instructions. No mock image is presented as a real application screenshot.
 
 ## Technology choices
 
@@ -75,7 +94,7 @@ The future backend and provider design is not locked. A planned integration with
 ### Install
 
 ```powershell
-git clone https://github.com/<your-github-username>/DIS-AI-Dev.git
+git clone https://github.com/sdeepak20072004-hue/DIS-AI-Dev.git
 cd DIS-AI-Dev
 npm install
 npm run typecheck
