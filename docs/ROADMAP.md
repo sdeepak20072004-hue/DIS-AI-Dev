@@ -44,7 +44,8 @@ This roadmap is a planning document. Milestones are considered complete only whe
 
 ## M5 — Coding workflow
 
-- [ ] Read-only project explorer scoped to a chosen root.
+- [x] Read-only code/text search scoped to the repository root, with basic secret/generated-file exclusions and result limits.
+- [ ] User-selectable project root, richer indexing, semantic search and explicit context preview before provider use.
 - [ ] Context preview before sending code to a provider.
 - [ ] Proposed patches shown as diffs and applied only after explicit approval.
 - [ ] Command execution disabled by default; each allowed run is reviewed, scoped, timed and logged.
