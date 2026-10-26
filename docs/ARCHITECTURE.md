@@ -15,7 +15,7 @@ flowchart TD
   Main --> Window[Desktop window]
 ```
 
-The UI prototype does not currently call an AI model, run commands, use the camera/microphone, index files or persist AI memory.
+The UI prototype does not currently call an AI model, run commands, use the camera/microphone or persist AI memory. The Python sidecar now performs bounded, read-only literal search of eligible text/code files under the repository root; it skips common generated/dependency folders and secret-like files and does not persist an index.
 
 ## Proposed future boundaries
 
