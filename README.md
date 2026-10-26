@@ -131,6 +131,8 @@ npm run build        # Typecheck and build distributable app files
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/ROADMAP.md`](docs/ROADMAP.md) and [`docs/GITHUB_PUBLISHING.md`](docs/GITHUB_PUBLISHING.md) for the first public-repository workflow.
 
+See [`docs/COMPETITIVE_RESEARCH.md`](docs/COMPETITIVE_RESEARCH.md) for the source-based Cursor / Stonic AI comparison and DIS AI Dev capability roadmap.
+
 ## Security and privacy
 
 - Never commit `.env` files, API keys, access tokens, personal data or local credentials.
