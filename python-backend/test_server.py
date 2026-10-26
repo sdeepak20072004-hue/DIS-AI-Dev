@@ -5,6 +5,7 @@ import json
 import threading
 import unittest
 from http.server import ThreadingHTTPServer
+from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -68,7 +69,7 @@ class PythonHelperServiceTests(unittest.TestCase):
         self.assertEqual(payload["workspace_name"], "DIS-AI-Dev")
         self.assertTrue(payload["read_only"])
         self.assertFalse(payload["persistent_index"])
-        self.assertNotIn(str(__import__("pathlib").Path(__file__).resolve().parents[1]), str(payload))
+        self.assertNotIn(str(Path(__file__).resolve().parents[1]), str(payload))
 
     def test_workspace_search_returns_relative_code_matches(self) -> None:
         with urlopen(
