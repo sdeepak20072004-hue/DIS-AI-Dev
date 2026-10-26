@@ -4,6 +4,9 @@ from __future__ import annotations
 import json
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlsplit
+
+from workspace_index import PROJECT_ROOT, search_workspace, summarize_workspace
 
 HOST = "127.0.0.1"
 PORT = 8765
@@ -65,20 +68,37 @@ class PythonHelperHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self._reject_disallowed_origin():
             return
-        if self.path != "/health":
-            self._send_json(404, {"ok": False, "error": "Endpoint not found"})
+
+        request_url = urlsplit(self.path)
+        if request_url.path == "/health":
+            self._send_json(
+                200,
+                {
+                    "ok": True,
+                    "service": SERVICE_NAME,
+                    "runtime": "Python",
+                    "version": sys.version.split()[0],
+                    "ai_connected": False,
+                    "mode": "local-only",
+                },
+            )
             return
-        self._send_json(
-            200,
-            {
-                "ok": True,
-                "service": SERVICE_NAME,
-                "runtime": "Python",
-                "version": sys.version.split()[0],
-                "ai_connected": False,
-                "mode": "local-only",
-            },
-        )
+
+        if request_url.path == "/workspace/summary":
+            self._send_json(200, summarize_workspace(PROJECT_ROOT))
+            return
+
+        if request_url.path == "/workspace/search":
+            query = parse_qs(request_url.query, keep_blank_values=True).get("q", [""])[0]
+            try:
+                payload = search_workspace(query, PROJECT_ROOT)
+            except ValueError as error:
+                self._send_json(400, {"ok": False, "error": str(error)})
+                return
+            self._send_json(200, payload)
+            return
+
+        self._send_json(404, {"ok": False, "error": "Endpoint not found"})
 
     def do_POST(self) -> None:
         if self._reject_disallowed_origin():
