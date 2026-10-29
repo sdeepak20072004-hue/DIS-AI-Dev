@@ -1,14 +1,16 @@
-"""Local-only Python helper service for the DIS AI Dev prototype."""
+"""Local-only Python helper and provider gateway for DIS AI Dev."""
 from __future__ import annotations
 
 import json
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from provider_gateway import ProviderError, complete_chat
+
 HOST = "127.0.0.1"
 PORT = 8765
-MAX_BODY_BYTES = 4096
-MAX_MESSAGE_LENGTH = 1000
+MAX_BODY_BYTES = 16_384
+MAX_ECHO_MESSAGE_LENGTH = 1000
 SERVICE_NAME = "DIS AI Dev Python helper"
 
 ALLOWED_ORIGINS = {
@@ -20,9 +22,9 @@ ALLOWED_ORIGINS = {
 
 
 class PythonHelperHandler(BaseHTTPRequestHandler):
-    """Handle health and echo requests from the desktop prototype."""
+    """Handle local health, echo, and mock-chat requests."""
 
-    server_version = "DISAIPythonHelper/0.1"
+    server_version = "DISAIPythonHelper/0.2"
 
     def _origin_is_allowed(self) -> bool:
         origin = self.headers.get("Origin")
@@ -45,7 +47,7 @@ class PythonHelperHandler(BaseHTTPRequestHandler):
     def _reject_disallowed_origin(self) -> bool:
         if self._origin_is_allowed():
             return False
-        self._send_json(403, {"ok": False, "error": "Origin is not allowed"})
+        self._send_json(403, {"ok": False, "error": {"code": "origin_not_allowed", "message": "Origin is not allowed."}})
         return True
 
     def do_OPTIONS(self) -> None:
@@ -66,7 +68,7 @@ class PythonHelperHandler(BaseHTTPRequestHandler):
         if self._reject_disallowed_origin():
             return
         if self.path != "/health":
-            self._send_json(404, {"ok": False, "error": "Endpoint not found"})
+            self._send_json(404, {"ok": False, "error": {"code": "not_found", "message": "Endpoint not found."}})
             return
         self._send_json(
             200,
@@ -77,56 +79,74 @@ class PythonHelperHandler(BaseHTTPRequestHandler):
                 "version": sys.version.split()[0],
                 "ai_connected": False,
                 "mode": "local-only",
+                "provider_gateway": "mock",
             },
         )
 
     def do_POST(self) -> None:
         if self._reject_disallowed_origin():
             return
-        if self.path != "/echo":
-            self._send_json(404, {"ok": False, "error": "Endpoint not found"})
+        if self.path not in {"/echo", "/chat"}:
+            self._send_json(404, {"ok": False, "error": {"code": "not_found", "message": "Endpoint not found."}})
             return
         if "application/json" not in self.headers.get("Content-Type", "").lower():
-            self._send_json(415, {"ok": False, "error": "Content-Type must be application/json"})
+            self._send_json(415, {"ok": False, "error": {"code": "unsupported_media_type", "message": "Content-Type must be application/json."}})
             return
         try:
             body_length = int(self.headers.get("Content-Length", ""))
         except ValueError:
-            self._send_json(411, {"ok": False, "error": "Content-Length is required"})
+            self._send_json(411, {"ok": False, "error": {"code": "length_required", "message": "Content-Length is required."}})
             return
         if body_length < 0:
-            self._send_json(400, {"ok": False, "error": "Invalid content length"})
+            self._send_json(400, {"ok": False, "error": {"code": "invalid_length", "message": "Invalid content length."}})
             return
         if body_length > MAX_BODY_BYTES:
-            self._send_json(413, {"ok": False, "error": "Request body is too large"})
+            self._send_json(413, {"ok": False, "error": {"code": "body_too_large", "message": "Request body is too large."}})
             return
         try:
             payload = json.loads(self.rfile.read(body_length).decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
-            self._send_json(400, {"ok": False, "error": "Request body must be valid JSON"})
+            self._send_json(400, {"ok": False, "error": {"code": "invalid_json", "message": "Request body must be valid JSON."}})
             return
         if not isinstance(payload, dict):
-            self._send_json(400, {"ok": False, "error": "JSON body must be an object"})
+            self._send_json(400, {"ok": False, "error": {"code": "invalid_request", "message": "JSON body must be an object."}})
             return
-        message = payload.get("message")
-        if not isinstance(message, str) or not message.strip():
-            self._send_json(400, {"ok": False, "error": "A non-empty message is required"})
+
+        if self.path == "/echo":
+            message = payload.get("message")
+            if not isinstance(message, str) or not message.strip():
+                self._send_json(400, {"ok": False, "error": {"code": "invalid_message", "message": "A non-empty message is required."}})
+                return
+            if len(message) > MAX_ECHO_MESSAGE_LENGTH:
+                self._send_json(413, {"ok": False, "error": {"code": "message_too_long", "message": "Message is too long."}})
+                return
+            self._send_json(
+                200,
+                {
+                    "ok": True,
+                    "echo": message,
+                    "processed_by": "Python standard-library helper",
+                    "ai_connected": False,
+                },
+            )
             return
-        if len(message) > MAX_MESSAGE_LENGTH:
-            self._send_json(413, {"ok": False, "error": "Message is too long"})
+
+        try:
+            result = complete_chat(payload)
+        except ProviderError as error:
+            self._send_json(
+                error.status_code,
+                {
+                    "ok": False,
+                    "error": {"code": error.code, "message": error.message},
+                    "ai_connected": False,
+                },
+            )
             return
-        self._send_json(
-            200,
-            {
-                "ok": True,
-                "echo": message,
-                "processed_by": "Python standard-library helper",
-                "ai_connected": False,
-            },
-        )
+        self._send_json(200, result)
 
     def log_message(self, format: str, *args: object) -> None:
-        # Request logs include method/path/status, never message body contents.
+        # Log method/path/status only; never log prompts, response bodies, or secrets.
         super().log_message(format, *args)
 
 
@@ -138,8 +158,8 @@ def make_server(host: str = HOST, port: int = PORT) -> ThreadingHTTPServer:
 def main() -> None:
     server = make_server()
     print(f"{SERVICE_NAME} listening at http://{HOST}:{PORT}", flush=True)
-    print("Endpoints: GET /health and POST /echo. Press Ctrl+C to stop.", flush=True)
-    print("Local prototype only: no AI provider is connected.", flush=True)
+    print("Endpoints: GET /health, POST /echo, and POST /chat. Press Ctrl+C to stop.", flush=True)
+    print("The chat endpoint uses a deterministic mock provider; no AI provider is connected.", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
