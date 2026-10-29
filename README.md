@@ -32,7 +32,7 @@ DIS AI Dev is a personal project exploring how a secure desktop workspace could 
 
 ## Python helper (local development prototype)
 
-DIS AI Dev includes an optional Python standard-library sidecar for learning and bridge verification. It provides GET /health and POST /echo, listens only on 127.0.0.1:8765, and does not call an AI model, execute shell commands, read project files, or persist messages. It is not an AI provider integration.
+DIS AI Dev includes a Python standard-library sidecar for local provider-contract verification. It provides GET /health, POST /echo and POST /chat; the chat route delegates to a deterministic mock provider in python-backend/provider_gateway.py. It binds only to 127.0.0.1:8765 and does not call an external AI model, execute shell commands, read project files or persist messages.
 
 Start it in a separate PowerShell terminal:
 
@@ -42,13 +42,13 @@ Run the built-in tests in another terminal:
 
     py -3 -m unittest discover -s .\python-backend -p "test_*.py" -v
 
-In AI Workspace, select Test Python Bridge to test both endpoints. Stop the Python service with Ctrl+C in its terminal.
+In AI Workspace, select Test Python Bridge to test health and echo; sending a chat message exercises the mock-provider /chat contract. Stop the service with Ctrl+C in its terminal. See docs/PROVIDER_GATEWAY.md for the request, response and error contract.
 
 ## What is not implemented yet
 
 These are planned, not working features in the current UI prototype:
 
-- Connected AI model/provider calls, API-key handling and streaming conversations. The current workspace replies with fixed local demo rules only.
+- Real AI model/provider calls, secure API-key configuration and streaming conversations. The current route returns deterministic mock responses only; Local Demo is the fallback when Python is unavailable.
 - Autonomous coding-agent behavior, terminal execution, file edits or automatic commits.
 - Persistent chat history, memory, retrieval or document indexing.
 - Speech-to-text, text-to-speech, wake-word detection or camera-based features.
@@ -129,7 +129,7 @@ npm run build        # Typecheck and build distributable app files
 5. **Design for deletion and recovery.** Memory and project context should be inspectable and removable; file changes should have diffs and recovery paths.
 6. **Prove before announcing.** Tests, screenshots, sample outputs and release notes should support claims about working features.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/ROADMAP.md`](docs/ROADMAP.md) and [`docs/GITHUB_PUBLISHING.md`](docs/GITHUB_PUBLISHING.md) for the first public-repository workflow.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ROADMAP.md](docs/ROADMAP.md), [docs/PROVIDER_GATEWAY.md](docs/PROVIDER_GATEWAY.md), [docs/PRODUCT_BENCHMARK.md](docs/PRODUCT_BENCHMARK.md) and [docs/GITHUB_PUBLISHING.md](docs/GITHUB_PUBLISHING.md) for architecture, benchmark direction and repository workflow.
 
 ## Security and privacy
 
