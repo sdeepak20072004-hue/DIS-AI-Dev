@@ -331,7 +331,7 @@ export default function WorkspaceScreen(): React.JSX.Element {
           </form>
           <div className="workspace-composer-foot">
             <span>{status}</span>
-            <span>Nothing leaves this renderer in Local Demo mode.</span>
+            <span>Requests stay on this PC; no external AI provider is contacted.</span>
           </div>
         </div>
       </div>
