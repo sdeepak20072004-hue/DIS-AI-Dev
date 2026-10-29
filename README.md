@@ -2,7 +2,7 @@
 
 **A desktop-first AI development workspace — built in the open, one verified milestone at a time.**
 
-> Status: early-stage UI prototype. The desktop shell runs locally. AI chat, model-provider connections, coding-agent actions, voice, camera, persistent memory and workflow execution are roadmap items, not implemented capabilities in this release.
+> Status: early-stage desktop prototype. The shell, local Python bridge and deterministic mock-provider chat flow are implemented. Real AI model/provider connections, coding-agent actions, voice, camera, persistent memory and workflow execution remain planned.
 
 ![Electron](https://img.shields.io/badge/Electron-desktop-47848F?logo=electron&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
@@ -26,7 +26,8 @@ DIS AI Dev is a personal project exploring how a secure desktop workspace could 
 - [x] React + TypeScript renderer and TypeScript checks.
 - [x] Navigation across Overview, AI Workspace, Code Studio, Agents, Knowledge, Memory, Activity, Integrations, Roadmap and Settings screens.
 - [x] Responsive dark UI shell with honest “not connected” states.
-- [x] Interactive Local Demo chat with in-memory session state and clearly labeled rule-based replies (no model provider connected).
+- [x] Local Demo fallback with in-memory session state and clearly labeled rule-based replies (no model provider connected).
+- [x] Python mock-provider gateway with typed request/response contracts, structured errors and automated tests (no external AI model connected).
 - [x] Initial engineering, security and roadmap documentation.
 
 ## Python helper (local development prototype)
@@ -60,7 +61,7 @@ The interface intentionally labels these modules as placeholders. A visual card 
 | Module         | Current state  | Intended direction                                          |
 | -------------- | -------------- | ----------------------------------------------------------- |
 | Overview       | UI available   | Workspace status, milestones and safe next actions          |
-| AI Workspace   | Local Demo     | Provider adapter and streaming responses (planned)          |
+| AI Workspace   | Python mock gateway | Deterministic mock responses; real provider and streaming planned |
 | Code Studio    | Placeholder UI | Project context, reviewed diffs and approval-gated commands |
 | Agents & Tasks | Placeholder UI | Explicit agent contracts, task state and approvals          |
 | Knowledge Base | Placeholder UI | User-approved sources, citations and scoped retrieval       |
