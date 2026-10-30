@@ -30,10 +30,13 @@ This roadmap is a planning document. Milestones are considered complete only whe
 
 ## M3 — Provider gateway
 
-- [ ] Define typed request/response, streaming, cancellation and error contracts.
-- [ ] Implement a mock provider before any real API provider.
-- [ ] Define secure configuration and secret-redaction rules.
-- [ ] Add timeouts, retry policy where appropriate and rate-limit feedback.
+- [x] Define typed non-streaming request/response and structured error contracts for mock requests.
+- [x] Implement a deterministic mock provider and HTTP contract tests before any real API provider.
+- [ ] Define secure configuration and secret-redaction rules for real provider credentials.
+- [ ] Define streaming and cancellation contracts.
+- [ ] Add provider timeouts, retry policy where appropriate and rate-limit feedback.
+
+Current boundary: only the mock provider is active; ai_connected remains false. The UI calls the local Python service during development and falls back to the Local Demo response if it is unavailable.
 
 ## M4 — Streaming chat
 

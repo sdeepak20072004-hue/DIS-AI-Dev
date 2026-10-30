@@ -1,7 +1,16 @@
 import { useState } from 'react'
 
 type ChatRole = 'user' | 'assistant'
-type ChatMessage = { id: number; role: ChatRole; text: string }
+type ChatMessage = { id: number; role: ChatRole; text: string; provider?: string }
+
+type ProviderChatResponse = {
+  ok: boolean
+  request_id: string
+  message: string
+  provider: string
+  model: string
+  ai_connected: boolean
+}
 
 type PythonBridgeHealth = {
   ok: boolean
@@ -81,6 +90,7 @@ function localReply(prompt: string): string {
 export default function WorkspaceScreen(): React.JSX.Element {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
+  const [isSending, setIsSending] = useState(false)
   const [status, setStatus] = useState('Local demo ready · No provider connected')
   const [pythonState, setPythonState] = useState<
     'not-tested' | 'checking' | 'connected' | 'offline'
@@ -169,8 +179,7 @@ export default function WorkspaceScreen(): React.JSX.Element {
     setExplorerState('searching')
     setExplorerNote('Searching eligible files locally…')
     try {
-      const url =
-        'http://127.0.0.1:8765/workspace/search?q=' + encodeURIComponent(query)
+      const url = 'http://127.0.0.1:8765/workspace/search?q=' + encodeURIComponent(query)
       const response = await fetch(url, { signal: AbortSignal.timeout(7000) })
       const result = (await response.json()) as WorkspaceSearchResponse & { error?: string }
       if (!response.ok || !result.ok || !result.read_only || result.persistent_index) {
@@ -191,16 +200,53 @@ export default function WorkspaceScreen(): React.JSX.Element {
     }
   }
 
-  const send = (value = input): void => {
+  const send = async (value = input): Promise<void> => {
     const text = value.trim()
-    if (!text) return
-    setMessages((current) => [
-      ...current,
-      { id: Date.now(), role: 'user', text },
-      { id: Date.now() + 1, role: 'assistant', text: localReply(text) }
-    ])
+    if (!text || isSending) return
+
+    setIsSending(true)
     setInput('')
-    setStatus('Local demo replied · No external model was called')
+    setMessages((current) => [...current, { id: Date.now(), role: 'user', text }])
+    setStatus('Sending to the local Python mock provider…')
+
+    try {
+      const response = await fetch('http://127.0.0.1:8765/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+        signal: AbortSignal.timeout(8000)
+      })
+      if (!response.ok) throw new Error('Mock provider request failed')
+
+      const result = (await response.json()) as ProviderChatResponse
+      if (!result.ok || !result.message || result.provider !== 'mock' || result.ai_connected) {
+        throw new Error('Unexpected provider response')
+      }
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: Date.now(),
+          role: 'assistant',
+          text: result.message,
+          provider: result.provider
+        }
+      ])
+      setStatus('Python mock provider replied · ' + result.model + ' · no AI model connected')
+    } catch {
+      setMessages((current) => [
+        ...current,
+        {
+          id: Date.now(),
+          role: 'assistant',
+          text: localReply(text),
+          provider: 'local-fallback'
+        }
+      ])
+      setStatus('Python provider unavailable · replied with built-in Local Demo fallback')
+    } finally {
+      setIsSending(false)
+    }
   }
 
   const newChat = (): void => {
@@ -226,7 +272,12 @@ export default function WorkspaceScreen(): React.JSX.Element {
             <span className="workspace-kicker">WORKSPACE</span>
             <h2>Conversations</h2>
           </div>
-          <button type="button" className="workspace-new-button" onClick={newChat}>
+          <button
+            type="button"
+            className="workspace-new-button"
+            onClick={newChat}
+            disabled={isSending}
+          >
             + New
           </button>
         </div>
@@ -259,7 +310,7 @@ export default function WorkspaceScreen(): React.JSX.Element {
             </div>
           </div>
           <span className="workspace-local-badge">
-            <i /> RULE-BASED DEMO
+            <i /> LOCAL MOCK GATEWAY
           </span>
         </header>
         <div
@@ -325,7 +376,8 @@ export default function WorkspaceScreen(): React.JSX.Element {
             <div className="workspace-explorer-summary">
               <span>
                 <strong>{explorerSummary.workspace_name}</strong>
-                {' · '}{explorerSummary.files_scanned} files checked
+                {' · '}
+                {explorerSummary.files_scanned} files checked
               </span>
               <span>{Object.keys(explorerSummary.extensions).length} file types</span>
             </div>
@@ -333,20 +385,26 @@ export default function WorkspaceScreen(): React.JSX.Element {
           {searchResults ? (
             <div className="workspace-explorer-results" aria-live="polite">
               {searchResults.results.length === 0 ? (
-                <p className="workspace-explorer-empty">No matching lines found in eligible text files.</p>
+                <p className="workspace-explorer-empty">
+                  No matching lines found in eligible text files.
+                </p>
               ) : (
                 searchResults.results.map((result) => (
                   <article
                     className="workspace-explorer-result"
                     key={result.path + ':' + result.line}
                   >
-                    <strong>{result.path}:{result.line}</strong>
+                    <strong>
+                      {result.path}:{result.line}
+                    </strong>
                     <code>{result.snippet}</code>
                   </article>
                 ))
               )}
               {searchResults.truncated ? (
-                <p className="workspace-explorer-empty">Results were limited. Refine your search for a smaller result set.</p>
+                <p className="workspace-explorer-empty">
+                  Results were limited. Refine your search for a smaller result set.
+                </p>
               ) : null}
             </div>
           ) : null}
@@ -358,8 +416,9 @@ export default function WorkspaceScreen(): React.JSX.Element {
         <div className="workspace-demo-banner" role="note">
           <span className="workspace-banner-icon">i</span>
           <p>
-            <strong>Local demo mode.</strong> Replies use simple built-in rules. No AI model or
-            external service is connected.
+            <strong>Local mock gateway.</strong> When Python is running, messages use a tested
+            mock-provider contract. Replies are deterministic; no external AI model is connected. If
+            Python is stopped, the local demo fallback is used.
           </p>
         </div>
         <div className="workspace-messages" aria-live="polite" aria-label="Conversation messages">
@@ -374,7 +433,12 @@ export default function WorkspaceScreen(): React.JSX.Element {
               </p>
               <div className="workspace-suggestions">
                 {suggestions.map((item) => (
-                  <button key={item.title} type="button" onClick={() => send(item.prompt)}>
+                  <button
+                    key={item.title}
+                    type="button"
+                    onClick={() => void send(item.prompt)}
+                    disabled={isSending}
+                  >
                     <strong>{item.title}</strong>
                     <span>{item.prompt}</span>
                     <b aria-hidden="true">↗</b>
@@ -390,7 +454,15 @@ export default function WorkspaceScreen(): React.JSX.Element {
               </div>
               <div className="workspace-message-body">
                 <div className="workspace-message-meta">
-                  <strong>{message.role === 'assistant' ? 'DIS AI · Local demo' : 'You'}</strong>
+                  <strong>
+                    {message.role === 'assistant'
+                      ? message.provider === 'mock'
+                        ? 'DIS AI · Python mock provider'
+                        : message.provider === 'local-fallback'
+                          ? 'DIS AI · Local demo fallback'
+                          : 'DIS AI · Local demo'
+                      : 'You'}
+                  </strong>
                   {message.role === 'assistant' ? (
                     <button
                       type="button"
@@ -411,7 +483,7 @@ export default function WorkspaceScreen(): React.JSX.Element {
             className="workspace-composer"
             onSubmit={(event) => {
               event.preventDefault()
-              send()
+              void send()
             }}
           >
             <label className="workspace-composer-label" htmlFor="workspace-prompt">
@@ -424,7 +496,7 @@ export default function WorkspaceScreen(): React.JSX.Element {
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
                   event.preventDefault()
-                  send()
+                  void send()
                 }
               }}
               placeholder="Ask about Git, the project roadmap, Electron or React..."
@@ -432,14 +504,18 @@ export default function WorkspaceScreen(): React.JSX.Element {
             />
             <div className="workspace-composer-toolbar">
               <span>Enter to send · Shift + Enter for a new line</span>
-              <button type="submit" className="workspace-send-button" disabled={!input.trim()}>
-                Send <b aria-hidden="true">↗</b>
+              <button
+                type="submit"
+                className="workspace-send-button"
+                disabled={!input.trim() || isSending}
+              >
+                {isSending ? 'Sending…' : 'Send'} <b aria-hidden="true">↗</b>
               </button>
             </div>
           </form>
           <div className="workspace-composer-foot">
             <span>{status}</span>
-            <span>Nothing leaves this renderer in Local Demo mode.</span>
+            <span>Requests stay on this PC; no external AI provider is contacted.</span>
           </div>
         </div>
       </div>

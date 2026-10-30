@@ -2,7 +2,7 @@
 
 **A desktop-first AI development workspace — built in the open, one verified milestone at a time.**
 
-> Status: early-stage UI prototype. The desktop shell runs locally. AI chat, model-provider connections, coding-agent actions, voice, camera, persistent memory and workflow execution are roadmap items, not implemented capabilities in this release.
+> Status: early-stage desktop prototype. The shell, local Python bridge and deterministic mock-provider chat flow are implemented. Real AI model/provider connections, coding-agent actions, voice, camera, persistent memory and workflow execution remain planned.
 
 ![Electron](https://img.shields.io/badge/Electron-desktop-47848F?logo=electron&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
@@ -26,13 +26,14 @@ DIS AI Dev is a personal project exploring how a secure desktop workspace could 
 - [x] React + TypeScript renderer and TypeScript checks.
 - [x] Navigation across Overview, AI Workspace, Code Studio, Agents, Knowledge, Memory, Activity, Integrations, Roadmap and Settings screens.
 - [x] Responsive dark UI shell with honest “not connected” states.
-- [x] Interactive Local Demo chat with in-memory session state and clearly labeled rule-based replies (no model provider connected).
+- [x] Local Demo fallback with in-memory session state and clearly labeled rule-based replies (no model provider connected).
+- [x] Python mock-provider gateway with typed request/response contracts, structured errors and automated tests (no external AI model connected).
 - [x] Initial engineering, security and roadmap documentation.
 - [x] Read-only Python project summary/search with bounded results and excluded secret/generated paths.
 
 ## Python helper (local development prototype)
 
-DIS AI Dev includes an optional Python standard-library sidecar for learning and bridge verification. It provides GET /health and POST /echo, plus read-only GET /workspace/summary and GET /workspace/search?q=term endpoints. It listens only on 127.0.0.1:8765, searches eligible small code/text files only within the current repository, skips common generated/dependency folders and secret-like files, and does not persist an index, execute shell commands, or send project contents to an AI provider. Project search is basic literal line search, not semantic search.
+DIS AI Dev includes a Python standard-library sidecar for local provider-contract verification. It provides GET /health, POST /echo and POST /chat; the chat route delegates to a deterministic mock provider in python-backend/provider_gateway.py. It also provides read-only GET /workspace/summary and GET /workspace/search?q=term. It binds only to 127.0.0.1:8765, searches eligible small code/text files only within the current repository, skips common generated/dependency folders and secret-like files, and does not persist an index, call an external AI model, execute shell commands, or send project contents to an AI provider. Project search is basic literal line search, not semantic search.
 
 Start it in a separate PowerShell terminal:
 
@@ -42,13 +43,13 @@ Run the built-in tests in another terminal:
 
     py -3 -m unittest discover -s .\python-backend -p "test_*.py" -v
 
-In AI Workspace, select Test Python Bridge to test both endpoints. Stop the Python service with Ctrl+C in its terminal.
+In AI Workspace, select Test Python Bridge to test health and echo; sending a chat message exercises the mock-provider /chat contract. Stop the service with Ctrl+C in its terminal. See docs/PROVIDER_GATEWAY.md for the request, response and error contract.
 
 ## What is not implemented yet
 
 These are planned, not working features in the current UI prototype:
 
-- Connected AI model/provider calls, API-key handling and streaming conversations. The current workspace replies with fixed local demo rules only.
+- Real AI model/provider calls, secure API-key configuration and streaming conversations. The current route returns deterministic mock responses only; Local Demo is the fallback when Python is unavailable.
 - Autonomous coding-agent behavior, terminal execution, file edits or automatic commits.
 - Persistent chat history, memory, retrieval or document indexing.
 - Speech-to-text, text-to-speech, wake-word detection or camera-based features.
@@ -61,7 +62,7 @@ The interface intentionally labels these modules as placeholders. A visual card 
 | Module         | Current state  | Intended direction                                          |
 | -------------- | -------------- | ----------------------------------------------------------- |
 | Overview       | UI available   | Workspace status, milestones and safe next actions          |
-| AI Workspace   | Local Demo     | Provider adapter and streaming responses (planned)          |
+| AI Workspace   | Python mock gateway | Deterministic mock responses; real provider and streaming planned |
 | Code Studio    | Placeholder UI | Project context, reviewed diffs and approval-gated commands |
 | Agents & Tasks | Placeholder UI | Explicit agent contracts, task state and approvals          |
 | Knowledge Base | Placeholder UI | User-approved sources, citations and scoped retrieval       |
@@ -129,7 +130,7 @@ npm run build        # Typecheck and build distributable app files
 5. **Design for deletion and recovery.** Memory and project context should be inspectable and removable; file changes should have diffs and recovery paths.
 6. **Prove before announcing.** Tests, screenshots, sample outputs and release notes should support claims about working features.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/ROADMAP.md`](docs/ROADMAP.md) and [`docs/GITHUB_PUBLISHING.md`](docs/GITHUB_PUBLISHING.md) for the first public-repository workflow.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ROADMAP.md](docs/ROADMAP.md), [docs/PROVIDER_GATEWAY.md](docs/PROVIDER_GATEWAY.md), [docs/PRODUCT_BENCHMARK.md](docs/PRODUCT_BENCHMARK.md) and [docs/GITHUB_PUBLISHING.md](docs/GITHUB_PUBLISHING.md) for architecture, benchmark direction and repository workflow.
 
 See [`docs/COMPETITIVE_RESEARCH.md`](docs/COMPETITIVE_RESEARCH.md) for the source-based Cursor / Stonic AI comparison and DIS AI Dev capability roadmap.
 

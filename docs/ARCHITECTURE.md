@@ -13,9 +13,10 @@ flowchart TD
   UI -. typed, narrow bridge .-> Preload[Electron preload]
   Preload -. approved IPC only .-> Main[Electron main process]
   Main --> Window[Desktop window]
+  UI -->|local development HTTP only| Python[127.0.0.1:8765 mock provider sidecar]
 ```
 
-The UI prototype does not currently call an AI model, run commands, use the camera/microphone or persist AI memory. The Python sidecar now performs bounded, read-only literal search of eligible text/code files under the repository root; it skips common generated/dependency folders and secret-like files and does not persist an index.
+The renderer can call the local Python sidecar for health checks, echo tests, a deterministic mock-provider chat route, and bounded read-only literal search of eligible text/code files under the repository root. Search skips common generated/dependency folders and secret-like files and does not persist an index. The app does not currently call an external AI model, run commands, use the camera/microphone or persist AI memory.
 
 ## Proposed future boundaries
 
