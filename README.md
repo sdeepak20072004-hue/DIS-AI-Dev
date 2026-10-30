@@ -29,10 +29,11 @@ DIS AI Dev is a personal project exploring how a secure desktop workspace could 
 - [x] Local Demo fallback with in-memory session state and clearly labeled rule-based replies (no model provider connected).
 - [x] Python mock-provider gateway with typed request/response contracts, structured errors and automated tests (no external AI model connected).
 - [x] Initial engineering, security and roadmap documentation.
+- [x] Read-only Python project summary/search with bounded results and excluded secret/generated paths.
 
 ## Python helper (local development prototype)
 
-DIS AI Dev includes a Python standard-library sidecar for local provider-contract verification. It provides GET /health, POST /echo and POST /chat; the chat route delegates to a deterministic mock provider in python-backend/provider_gateway.py. It binds only to 127.0.0.1:8765 and does not call an external AI model, execute shell commands, read project files or persist messages.
+DIS AI Dev includes a Python standard-library sidecar for local provider-contract verification. It provides GET /health, POST /echo and POST /chat; the chat route delegates to a deterministic mock provider in python-backend/provider_gateway.py. It also provides read-only GET /workspace/summary and GET /workspace/search?q=term. It binds only to 127.0.0.1:8765, searches eligible small code/text files only within the current repository, skips common generated/dependency folders and secret-like files, and does not persist an index, call an external AI model, execute shell commands, or send project contents to an AI provider. Project search is basic literal line search, not semantic search.
 
 Start it in a separate PowerShell terminal:
 
@@ -130,6 +131,8 @@ npm run build        # Typecheck and build distributable app files
 6. **Prove before announcing.** Tests, screenshots, sample outputs and release notes should support claims about working features.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ROADMAP.md](docs/ROADMAP.md), [docs/PROVIDER_GATEWAY.md](docs/PROVIDER_GATEWAY.md), [docs/PRODUCT_BENCHMARK.md](docs/PRODUCT_BENCHMARK.md) and [docs/GITHUB_PUBLISHING.md](docs/GITHUB_PUBLISHING.md) for architecture, benchmark direction and repository workflow.
+
+See [`docs/COMPETITIVE_RESEARCH.md`](docs/COMPETITIVE_RESEARCH.md) for the source-based Cursor / Stonic AI comparison and DIS AI Dev capability roadmap.
 
 ## Security and privacy
 

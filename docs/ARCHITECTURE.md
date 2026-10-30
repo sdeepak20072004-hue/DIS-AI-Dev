@@ -16,7 +16,7 @@ flowchart TD
   UI -->|local development HTTP only| Python[127.0.0.1:8765 mock provider sidecar]
 ```
 
-The renderer can call the local Python sidecar for health checks, echo tests and a deterministic mock-provider chat route. It does not currently call an external AI model, run commands, use the camera/microphone, index files or persist AI memory.
+The renderer can call the local Python sidecar for health checks, echo tests, a deterministic mock-provider chat route, and bounded read-only literal search of eligible text/code files under the repository root. Search skips common generated/dependency folders and secret-like files and does not persist an index. The app does not currently call an external AI model, run commands, use the camera/microphone or persist AI memory.
 
 ## Proposed future boundaries
 

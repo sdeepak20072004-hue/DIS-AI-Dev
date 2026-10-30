@@ -5,6 +5,7 @@ import json
 import threading
 import unittest
 from http.server import ThreadingHTTPServer
+from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -90,6 +91,35 @@ class PythonHelperServiceTests(unittest.TestCase):
         self.assertEqual(captured.exception.code, 413)
         payload = json.loads(captured.exception.read().decode("utf-8"))
         self.assertEqual(payload["error"]["code"], "message_too_long")
+        captured.exception.close()
+
+    def test_workspace_summary_returns_bounded_metadata(self) -> None:
+        with urlopen(f"{self.base_url}/workspace/summary", timeout=3) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["workspace_name"], "DIS-AI-Dev")
+        self.assertTrue(payload["read_only"])
+        self.assertFalse(payload["persistent_index"])
+        self.assertNotIn(str(Path(__file__).resolve().parents[1]), str(payload))
+
+    def test_workspace_search_returns_relative_code_matches(self) -> None:
+        with urlopen(
+            f"{self.base_url}/workspace/search?q=PythonHelperHandler", timeout=3
+        ) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        self.assertTrue(payload["ok"])
+        self.assertGreater(payload["match_count"], 0)
+        self.assertTrue(payload["read_only"])
+        self.assertTrue(
+            any(result["path"] == "python-backend/server.py" for result in payload["results"])
+        )
+        self.assertNotIn(str(__import__("pathlib").Path(__file__).resolve().parents[1]), str(payload))
+
+    def test_workspace_search_rejects_too_short_query(self) -> None:
+        request = Request(f"{self.base_url}/workspace/search?q=x", method="GET")
+        with self.assertRaises(HTTPError) as captured:
+            urlopen(request, timeout=3)
+        self.assertEqual(captured.exception.code, 400)
         captured.exception.close()
 
     def test_disallowed_browser_origin_is_rejected(self) -> None:
